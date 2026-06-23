@@ -599,3 +599,125 @@ class DashboardNegociationsView(APIView):
             },
         }
         return Response(data)
+    
+
+from .models import SimulationFiscale
+from .serializers import SimulationFiscaleSerializer
+
+
+class SimulationFiscaleViewSet(EntrepriseScopedMixin, viewsets.ModelViewSet):
+    """CRUD simulations fiscales + action calculate.
+    POST /api/simulations/{id}/calculer/ → déclenche le calcul et sauvegarde.
+    """
+
+    serializer_class = SimulationFiscaleSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter]
+    filterset_fields = ["commune", "statut"]
+    search_fields = ["nom", "campagne", "marque"]
+
+    def get_queryset(self):
+        return self.get_entreprise_scoped_queryset(SimulationFiscale.objects.all())
+
+    def perform_create(self, serializer):
+        instance = serializer.save(
+            entreprise_rel=self.request.user.entreprise,
+            createur=self.request.user,
+        )
+        instance.calculer()
+        instance.save()
+
+    def perform_update(self, serializer):
+        instance = serializer.save()
+        instance.calculer()
+        instance.save()
+
+    @action(detail=True, methods=["post"])
+    def calculer(self, request, pk=None):
+        simulation = self.get_object()
+        simulation.calculer()
+        simulation.save()
+        return Response(SimulationFiscaleSerializer(simulation).data)
+
+
+class AnalyseGapsView(APIView):
+    """GET /api/analyse-gaps/?commune=...
+
+    Rapprochement montant réclamé (DossierFiscal) vs montant recalculé
+    (Negociation) par commune, avec statut et recommandation.
+    Isolé par entreprise.
+    """
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        commune_filter = request.query_params.get("commune")
+
+        dossiers = _scope_to_entreprise(DossierFiscal.objects.all(), user)
+        negociations = _scope_to_entreprise(
+            Negociation.objects.filter(is_deleted=False), user
+        )
+
+        if commune_filter:
+            dossiers = dossiers.filter(commune=commune_filter)
+            negociations = negociations.filter(commune=commune_filter)
+
+        # Index négociations par commune
+        neg_by_commune: dict = {}
+        for neg in negociations:
+            if neg.commune not in neg_by_commune:
+                neg_by_commune[neg.commune] = {
+                    "montantInitial": 0,
+                    "montantRecalcule": 0,
+                    "montantNegocie": 0,
+                }
+            neg_by_commune[neg.commune]["montantInitial"] += float(neg.montant_initial)
+            neg_by_commune[neg.commune]["montantRecalcule"] += float(neg.montant_recalcule)
+            if neg.montant_negocie:
+                neg_by_commune[neg.commune]["montantNegocie"] += float(neg.montant_negocie)
+
+        results = []
+        for d in dossiers:
+            reclame = float(d.montant_reclame)
+            estimee = float(d.fiscalite_estimee)
+            neg_data = neg_by_commune.get(d.commune, {})
+            recalcule = neg_data.get("montantRecalcule", estimee)
+            negocie = neg_data.get("montantNegocie", 0)
+
+            gap = reclame - recalcule
+            gap_pct = round((gap / reclame * 100), 1) if reclame else 0
+            economie = reclame - negocie if negocie else None
+
+            if gap_pct > 20:
+                statut = "À négocier"
+                recommandation = "Gap supérieur à 20% — dossier à prioriser en négociation."
+            elif gap_pct > 5:
+                statut = "À vérifier"
+                recommandation = "Écart modéré — vérifier les supports recensés."
+            else:
+                statut = "Conforme"
+                recommandation = "Écart faible — validation possible après contrôle rapide."
+
+            # Supports contestables dans cette commune
+            supports_commune = _scope_to_entreprise(
+                DonneeCollectee.objects.filter(commune=d.commune, is_deleted=False), user
+            )
+            total_supports = supports_commune.count()
+
+            results.append({
+                "commune": d.commune,
+                "fiscaliteEstimee": estimee,
+                "montantReclame": reclame,
+                "montantRecalcule": recalcule,
+                "montantNegocie": negocie,
+                "gap": round(gap, 2),
+                "gapPourcentage": gap_pct,
+                "economie": economie,
+                "statut": statut,
+                "recommandation": recommandation,
+                "totalSupports": total_supports,
+            })
+
+        results.sort(key=lambda x: x["gap"], reverse=True)
+        return Response(results)

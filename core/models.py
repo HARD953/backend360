@@ -254,3 +254,87 @@ class ActivityLog(models.Model):
 
     def __str__(self):
         return self.description
+    
+
+class SimulationFiscale(models.Model):
+    """Simulation du coût fiscal d'une campagne avant déploiement (section 4 du document)."""
+
+    class Statut(models.TextChoices):
+        BROUILLON = "brouillon", "Brouillon"
+        VALIDE = "valide", "Validé"
+
+    entreprise_rel = models.ForeignKey(
+        "accounts.Entreprise", null=True, blank=True,
+        on_delete=models.SET_NULL, related_name="simulations"
+    )
+    createur = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True,
+        on_delete=models.SET_NULL
+    )
+    nom = models.CharField(max_length=150)
+    campagne = models.CharField(max_length=100, blank=True)
+    marque = models.CharField(max_length=100, blank=True)
+    statut = models.CharField(max_length=20, choices=Statut.choices, default=Statut.BROUILLON)
+
+    # Zone
+    commune = models.CharField(max_length=50, blank=True)
+    region = models.CharField(max_length=50, blank=True)
+    district = models.CharField(max_length=50, blank=True)
+
+    # Support
+    type_support = models.CharField(max_length=50, blank=True)
+    canal = models.CharField(max_length=50, blank=True)
+    surface = models.FloatField(null=True, blank=True)
+    duree_mois = models.IntegerField(default=12)
+    quantite = models.IntegerField(default=1)
+
+    # Fiscalité
+    taux_tsp = models.FloatField(default=5.0, help_text="Taux TSP en %")
+    odp_applicable = models.BooleanField(default=False)
+    taxes_communales = models.BooleanField(default=True)
+
+    # Résultats calculés
+    cout_tsp = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    cout_odp = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    cout_total = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    risque_fiscal = models.CharField(
+        max_length=10,
+        choices=[("Faible", "Faible"), ("Moyen", "Moyen"), ("Élevé", "Élevé")],
+        blank=True
+    )
+
+    cree_le = models.DateTimeField(auto_now_add=True)
+    modifie_le = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Simulation fiscale"
+        verbose_name_plural = "Simulations fiscales"
+        ordering = ["-cree_le"]
+
+    def __str__(self):
+        return f"{self.nom} — {self.commune}"
+
+    def calculer(self):
+        """Calcule le coût fiscal estimé et met à jour les champs calculés."""
+        surface = self.surface or 0
+        duree = self.duree_mois or 12
+        quantite = self.quantite or 1
+
+        # Base TSP : surface × durée × taux × quantité
+        base = surface * (duree / 12) * quantite
+        self.cout_tsp = round(base * self.taux_tsp * 1000, 2)
+
+        # ODP : forfait par support par mois si applicable
+        self.cout_odp = round(
+            (50000 * quantite * duree) if self.odp_applicable else 0, 2
+        )
+
+        self.cout_total = float(self.cout_tsp) + float(self.cout_odp)
+
+        # Risque fiscal selon le gap potentiel
+        if self.cout_total > 5_000_000:
+            self.risque_fiscal = "Élevé"
+        elif self.cout_total > 1_000_000:
+            self.risque_fiscal = "Moyen"
+        else:
+            self.risque_fiscal = "Faible"

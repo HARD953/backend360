@@ -1,12 +1,5 @@
 from rest_framework import serializers
-from .models import (
-    DonneeCollectee,
-    Negociation,
-    ArgumentairePret,
-    DossierFiscal,
-    AlertePrioritaire,
-    ActivityLog,
-)
+from .models import *
 
 
 # ---------------------------------------------------------------------------
@@ -258,3 +251,27 @@ class AgentRecenseurSerializer(serializers.Serializer):
     supportsCollectes = serializers.IntegerField()
     derniereActivite = serializers.DateTimeField(allow_null=True)
     affectations = serializers.ListField(child=serializers.CharField())
+
+class SimulationFiscaleSerializer(serializers.ModelSerializer):
+    coutTSP = serializers.DecimalField(source="cout_tsp", max_digits=14, decimal_places=2)
+    coutODP = serializers.DecimalField(source="cout_odp", max_digits=14, decimal_places=2)
+    coutTotal = serializers.DecimalField(source="cout_total", max_digits=14, decimal_places=2)
+    riqueFiscal = serializers.CharField(source="risque_fiscal")
+    dureesMois = serializers.IntegerField(source="duree_mois")
+    tauxTSP = serializers.FloatField(source="taux_tsp")
+    odpApplicable = serializers.BooleanField(source="odp_applicable")
+    taxesCommunales = serializers.BooleanField(source="taxes_communales")
+    typeSupport = serializers.CharField(source="type_support")
+    creeLe = serializers.DateTimeField(source="cree_le", read_only=True)
+
+    class Meta:
+        model = SimulationFiscale
+        fields = [
+            "id", "nom", "campagne", "marque", "statut",
+            "commune", "region", "district",
+            "typeSupport", "canal", "surface", "dureesMois", "quantite",
+            "tauxTSP", "odpApplicable", "taxesCommunales",
+            "coutTSP", "coutODP", "coutTotal", "riqueFiscal",
+            "creeLe",
+        ]
+        read_only_fields = ["id", "coutTSP", "coutODP", "coutTotal", "riqueFiscal", "creeLe"]
