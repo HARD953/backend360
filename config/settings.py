@@ -11,7 +11,14 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = config("SECRET_KEY")
 DEBUG = config("DEBUG", default=False, cast=bool)
 # ALLOWED_HOSTS = config("ALLOWED_HOSTS", default="localhost,127.0.0.1", cast=Csv())
-ALLOWED_HOSTS = ['*']
+
+ALLOWED_HOSTS = config(
+    "ALLOWED_HOSTS",
+    default="localhost,127.0.0.1",
+    cast=Csv(),
+)
+
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'visitrack360.vercel.app']
 
 # ---------------------------------------------------------------------------
 # Applications
@@ -124,7 +131,7 @@ MEDIA_URL = "media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
-
+CORS_ALLOW_CREDENTIALS = True
 # ---------------------------------------------------------------------------
 # Django REST Framework
 # ---------------------------------------------------------------------------
@@ -167,4 +174,26 @@ CORS_ALLOWED_ORIGINS = config(
     default="http://localhost:3000,https://visitrack360.vercel.app,http://visitrack360.vercel.app",
     cast=Csv(),
 )
-CORS_ALLOW_CREDENTIALS = True
+
+
+
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+]
+
+CORS_ALLOW_METHODS = [
+    'DELETE',
+    'GET',
+    'OPTIONS',
+    'PATCH',
+    'POST',
+    'PUT',
+]
