@@ -4,25 +4,16 @@ from decouple import config, Csv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# ---------------------------------------------------------------------------
-# Sécurité / environnement
-# ---------------------------------------------------------------------------
-
 SECRET_KEY = config("SECRET_KEY")
 DEBUG = config("DEBUG", default=False, cast=bool)
-# ALLOWED_HOSTS = config("ALLOWED_HOSTS", default="localhost,127.0.0.1", cast=Csv())
 
 ALLOWED_HOSTS = [
-    'localhost',
-    '127.0.0.1',
-    'visitrack360.vercel.app',
-    'backend360.onrender.com',  # ← AJOUTEZ CE DOMAINE
-    '.onrender.com',  # Optionnel : permet tous les sous-domaines onrender.com
+    "localhost",
+    "127.0.0.1",
+    "backend360.onrender.com",
+    ".onrender.com",
+    "visitrack360.vercel.app",
 ]
-
-# ---------------------------------------------------------------------------
-# Applications
-# ---------------------------------------------------------------------------
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -31,19 +22,17 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    # Tiers
     "rest_framework",
     "rest_framework_simplejwt",
     "corsheaders",
     "django_filters",
-    # Apps locales
     "accounts",
     "core",
 ]
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
-    "corsheaders.middleware.CorsMiddleware",  # avant CommonMiddleware
+    "corsheaders.middleware.CorsMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -72,35 +61,12 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "config.wsgi.application"
 
-# ---------------------------------------------------------------------------
-# Base de données
-# ---------------------------------------------------------------------------
-# Dev : SQLite, aucune installation de serveur DB requise.
-# Production : basculer sur PostgreSQL en décommentant le bloc ci-dessous
-# et en ajoutant DB_NAME/DB_USER/DB_PASSWORD/DB_HOST/DB_PORT dans .env,
-# puis `pip install psycopg2-binary`.
-
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
         "NAME": BASE_DIR / "db.sqlite3",
     }
 }
-
-# DATABASES = {
-#     "default": {
-#         "ENGINE": "django.db.backends.postgresql",
-#         "NAME": config("DB_NAME"),
-#         "USER": config("DB_USER"),
-#         "PASSWORD": config("DB_PASSWORD"),
-#         "HOST": config("DB_HOST", default="localhost"),
-#         "PORT": config("DB_PORT", default="5432"),
-#     }
-# }
-
-# ---------------------------------------------------------------------------
-# Utilisateur personnalisé
-# ---------------------------------------------------------------------------
 
 AUTH_USER_MODEL = "accounts.CustomUser"
 
@@ -111,29 +77,19 @@ AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
 
-# ---------------------------------------------------------------------------
-# Internationalisation
-# ---------------------------------------------------------------------------
-
 LANGUAGE_CODE = "fr-fr"
 TIME_ZONE = "Africa/Abidjan"
 USE_I18N = True
 USE_TZ = True
 
-# ---------------------------------------------------------------------------
-# Fichiers statiques / médias
-# ---------------------------------------------------------------------------
-
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
-
 MEDIA_URL = "media/"
 MEDIA_ROOT = BASE_DIR / "media"
-
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
-CORS_ALLOW_CREDENTIALS = True
+
 # ---------------------------------------------------------------------------
-# Django REST Framework
+# DRF
 # ---------------------------------------------------------------------------
 
 REST_FRAMEWORK = {
@@ -166,34 +122,35 @@ SIMPLE_JWT = {
 }
 
 # ---------------------------------------------------------------------------
-# CORS — le front Next.js tourne sur un autre port/domaine
+# CORS — liste explicite, pas de config() pour éviter les conflits
 # ---------------------------------------------------------------------------
 
-CORS_ALLOWED_ORIGINS = config(
-    "CORS_ALLOWED_ORIGINS",
-    default="http://localhost:3000,https://visitrack360.vercel.app,http://visitrack360.vercel.app",
-    cast=Csv(),
-)
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://localhost:3001",
+    "https://visitrack360.vercel.app",
+    "http://visitrack360.vercel.app",
+]
 
-
+CORS_ALLOW_CREDENTIALS = True
 
 CORS_ALLOW_HEADERS = [
-    'accept',
-    'accept-encoding',
-    'authorization',
-    'content-type',
-    'dnt',
-    'origin',
-    'user-agent',
-    'x-csrftoken',
-    'x-requested-with',
+    "accept",
+    "accept-encoding",
+    "authorization",
+    "content-type",
+    "dnt",
+    "origin",
+    "user-agent",
+    "x-csrftoken",
+    "x-requested-with",
 ]
 
 CORS_ALLOW_METHODS = [
-    'DELETE',
-    'GET',
-    'OPTIONS',
-    'PATCH',
-    'POST',
-    'PUT',
+    "DELETE",
+    "GET",
+    "OPTIONS",
+    "PATCH",
+    "POST",
+    "PUT",
 ]
