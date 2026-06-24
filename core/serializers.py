@@ -15,7 +15,7 @@ class SupportPublicitaireSerializer(serializers.ModelSerializer):
     typeSupport = serializers.CharField(source="type_support")
     nombreFace = serializers.FloatField(source="nombre_face")
     nombreSupport = serializers.FloatField(source="nombre_support")
-    surfaceODP = serializers.FloatField(source="surfaceODP")
+    surfaceODP = serializers.FloatField()
     etatSupport = serializers.CharField(source="etat_support")
     typeSite = serializers.CharField(source="typesite")
     agentNom = serializers.SerializerMethodField()
