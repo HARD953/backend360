@@ -48,3 +48,12 @@ class ActivityLogAdmin(admin.ModelAdmin):
     list_display = ["description", "type_activite", "auteur", "entreprise_rel", "cree_le"]
     list_filter = ["type_activite", "entreprise_rel"]
     readonly_fields = ["cree_le"]
+
+from .models import OrdreDeRecettes
+
+@admin.register(OrdreDeRecettes)
+class OrdreDeRecettesAdmin(admin.ModelAdmin):
+    list_display = ["reference", "nom_collectivite", "commune", "montant_reclame", "statut", "date_emission", "cree_le"]
+    list_filter = ["statut", "type_collectivite", "commune", "entreprise_rel"]
+    search_fields = ["reference", "nom_collectivite", "commune", "interlocuteur"]
+    readonly_fields = ["cree_le", "modifie_le"]

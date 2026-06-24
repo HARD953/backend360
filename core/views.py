@@ -721,3 +721,82 @@ class AnalyseGapsView(APIView):
 
         results.sort(key=lambda x: x["gap"], reverse=True)
         return Response(results)
+    
+from .models import OrdreDeRecettes
+from .serializers import OrdreDeRecettesSerializer
+
+
+class OrdreDeRecettesViewSet(EntrepriseScopedMixin, viewsets.ModelViewSet):
+    """CRUD ordres de recettes avec upload pièce jointe.
+
+    GET    /api/ordres-recettes/
+    POST   /api/ordres-recettes/
+    GET    /api/ordres-recettes/{id}/
+    PATCH  /api/ordres-recettes/{id}/
+    DELETE /api/ordres-recettes/{id}/
+    POST   /api/ordres-recettes/{id}/changer_statut/
+    GET    /api/ordres-recettes/statistiques/
+    """
+
+    serializer_class = OrdreDeRecettesSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_fields = {
+        "statut": ["exact"],
+        "type_collectivite": ["exact"],
+        "commune": ["exact"],
+        "date_emission": ["gte", "lte"],
+    }
+    search_fields = ["nom_collectivite", "reference", "commune", "interlocuteur"]
+    ordering = ["-cree_le"]
+
+    def get_queryset(self):
+        return self.get_entreprise_scoped_queryset(
+            OrdreDeRecettes.objects.filter(is_deleted=False).select_related("responsable")
+        )
+
+    def perform_create(self, serializer):
+        instance = serializer.save(entreprise_rel=self.request.user.entreprise)
+        ActivityLog.objects.create(
+            entreprise_rel=self.request.user.entreprise,
+            auteur=self.request.user,
+            description=f"Nouvel ordre de recettes enregistré — {instance.nom_collectivite}",
+            type_activite=ActivityLog.ActivityType.INFO,
+        )
+
+    @action(detail=True, methods=["post"])
+    def changer_statut(self, request, pk=None):
+        ordre = self.get_object()
+        nouveau_statut = request.data.get("statut")
+        if nouveau_statut not in dict(OrdreDeRecettes.Statut.choices):
+            return Response({"error": "Statut invalide."}, status=400)
+        ordre.statut = nouveau_statut
+        ordre.save(update_fields=["statut", "modifie_le"])
+        ActivityLog.objects.create(
+            entreprise_rel=request.user.entreprise,
+            auteur=request.user,
+            description=f"Statut ordre {ordre.reference or ordre.id} → {nouveau_statut}",
+            type_activite=ActivityLog.ActivityType.INFO,
+        )
+        return Response(OrdreDeRecettesSerializer(ordre).data)
+
+    @action(detail=False, methods=["get"])
+    def statistiques(self, request):
+        qs = self.get_queryset()
+        from django.db.models import Sum, Count
+        stats = qs.aggregate(
+            total=Count("id"),
+            montant_total=Sum("montant_reclame"),
+            penalites_total=Sum("penalites"),
+        )
+        par_statut = (
+            qs.values("statut")
+            .annotate(count=Count("id"), montant=Sum("montant_reclame"))
+            .order_by("statut")
+        )
+        return Response({
+            "total": stats["total"] or 0,
+            "montantTotal": float(stats["montant_total"] or 0),
+            "penalitesTotal": float(stats["penalites_total"] or 0),
+            "parStatut": list(par_statut),
+        })

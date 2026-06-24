@@ -12,6 +12,8 @@ from .views import (
     FiltresDisponiblesView,
 )
 from .views import SimulationFiscaleViewSet, AnalyseGapsView
+from .views import OrdreDeRecettesViewSet
+
 
 router = DefaultRouter()
 router.register("supports", SupportPublicitaireViewSet, basename="support")
@@ -20,6 +22,7 @@ router.register("argumentaires", ArgumentairePretViewSet, basename="argumentaire
 router.register("dossiers-fiscaux", DossierFiscalViewSet, basename="dossier-fiscal")
 router.register("alertes", AlertePrioritaireViewSet, basename="alerte")
 router.register("simulations", SimulationFiscaleViewSet, basename="simulation")
+router.register("ordres-recettes", OrdreDeRecettesViewSet, basename="ordre-recettes")
 
 urlpatterns = [
     path("dashboards/executif/", DashboardExecutifView.as_view(), name="dashboard-executif"),

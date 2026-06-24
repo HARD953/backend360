@@ -338,3 +338,83 @@ class SimulationFiscale(models.Model):
             self.risque_fiscal = "Moyen"
         else:
             self.risque_fiscal = "Faible"
+
+
+class OrdreDeRecettes(models.Model):
+    """Ordre de recettes reçu d'une collectivité (commune, région, district).
+    Correspond à la section 5 du document de cadrage."""
+
+    class TypeCollectivite(models.TextChoices):
+        COMMUNE = "commune", "Commune"
+        REGION = "region", "Région"
+        DISTRICT = "district", "District"
+
+    class Statut(models.TextChoices):
+        RECU = "recu", "Reçu"
+        EN_ANALYSE = "en_analyse", "En analyse"
+        CONTESTE = "conteste", "Contesté"
+        VALIDE = "valide", "Validé"
+        NEGOCIE = "negocie", "Négocié"
+        PAYE = "paye", "Payé"
+
+    entreprise_rel = models.ForeignKey(
+        "accounts.Entreprise", null=True, blank=True,
+        on_delete=models.SET_NULL, related_name="ordres_recettes"
+    )
+    responsable = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True,
+        on_delete=models.SET_NULL, related_name="ordres_recettes"
+    )
+
+    # Collectivité
+    type_collectivite = models.CharField(
+        max_length=20, choices=TypeCollectivite.choices, default=TypeCollectivite.COMMUNE
+    )
+    nom_collectivite = models.CharField(max_length=100)
+    commune = models.CharField(max_length=50, blank=True)
+    region = models.CharField(max_length=50, blank=True)
+    district = models.CharField(max_length=50, blank=True)
+    interlocuteur = models.CharField(max_length=100, blank=True)
+
+    # Document
+    reference = models.CharField(max_length=100, blank=True)
+    date_emission = models.DateField(null=True, blank=True)
+    periode_debut = models.DateField(null=True, blank=True)
+    periode_fin = models.DateField(null=True, blank=True)
+    piece_jointe = models.FileField(
+        upload_to="ordres_recettes/", null=True, blank=True
+    )
+
+    # Montants
+    montant_reclame = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    penalites = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    frais_annexes = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+
+    # Supports facturés
+    nombre_supports_factures = models.IntegerField(default=0)
+    type_support_facture = models.CharField(max_length=50, blank=True)
+    surface_facturee = models.FloatField(null=True, blank=True)
+    localite_facturee = models.CharField(max_length=100, blank=True)
+
+    # Statut & suivi
+    statut = models.CharField(
+        max_length=20, choices=Statut.choices, default=Statut.RECU
+    )
+    prochaine_action = models.CharField(max_length=255, blank=True)
+    commentaire = models.TextField(blank=True)
+
+    cree_le = models.DateTimeField(auto_now_add=True)
+    modifie_le = models.DateTimeField(auto_now=True)
+    is_deleted = models.BooleanField(default=False)
+
+    class Meta:
+        verbose_name = "Ordre de recettes"
+        verbose_name_plural = "Ordres de recettes"
+        ordering = ["-cree_le"]
+
+    def __str__(self):
+        return f"Ordre {self.reference or self.id} — {self.nom_collectivite}"
+
+    @property
+    def montant_total(self):
+        return float(self.montant_reclame) + float(self.penalites) + float(self.frais_annexes)

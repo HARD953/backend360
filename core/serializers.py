@@ -275,3 +275,46 @@ class SimulationFiscaleSerializer(serializers.ModelSerializer):
             "creeLe",
         ]
         read_only_fields = ["id", "coutTSP", "coutODP", "coutTotal", "riqueFiscal", "creeLe"]
+
+
+class OrdreDeRecettesSerializer(serializers.ModelSerializer):
+    montantReclame = serializers.DecimalField(source="montant_reclame", max_digits=14, decimal_places=2)
+    penalites = serializers.DecimalField(source="penalites", max_digits=14, decimal_places=2)
+    fraisAnnexes = serializers.DecimalField(source="frais_annexes", max_digits=14, decimal_places=2)
+    montantTotal = serializers.SerializerMethodField()
+    typeCollectivite = serializers.CharField(source="type_collectivite")
+    nomCollectivite = serializers.CharField(source="nom_collectivite")
+    dateEmission = serializers.DateField(source="date_emission", allow_null=True)
+    periodeDebut = serializers.DateField(source="periode_debut", allow_null=True)
+    periodeFin = serializers.DateField(source="periode_fin", allow_null=True)
+    nombreSupportsFactures = serializers.IntegerField(source="nombre_supports_factures")
+    typeSupportFacture = serializers.CharField(source="type_support_facture")
+    surfaceFacturee = serializers.FloatField(source="surface_facturee", allow_null=True)
+    localiteFacturee = serializers.CharField(source="localite_facturee")
+    prochaineAction = serializers.CharField(source="prochaine_action")
+    pieceJointe = serializers.FileField(source="piece_jointe", required=False, allow_null=True)
+    responsableNom = serializers.SerializerMethodField()
+    creeLe = serializers.DateTimeField(source="cree_le", read_only=True)
+    modifieLe = serializers.DateTimeField(source="modifie_le", read_only=True)
+
+    class Meta:
+        model = OrdreDeRecettes
+        fields = [
+            "id", "typeCollectivite", "nomCollectivite",
+            "commune", "region", "district", "interlocuteur",
+            "reference", "dateEmission", "periodeDebut", "periodeFin",
+            "pieceJointe",
+            "montantReclame", "penalites", "fraisAnnexes", "montantTotal",
+            "nombreSupportsFactures", "typeSupportFacture",
+            "surfaceFacturee", "localiteFacturee",
+            "statut", "prochaineAction", "commentaire",
+            "responsable", "responsableNom",
+            "creeLe", "modifieLe",
+        ]
+        read_only_fields = ["id", "montantTotal", "creeLe", "modifieLe"]
+
+    def get_montantTotal(self, obj):
+        return obj.montant_total
+
+    def get_responsableNom(self, obj):
+        return obj.responsable.nom_complet if obj.responsable else None
