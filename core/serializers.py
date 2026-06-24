@@ -279,7 +279,7 @@ class SimulationFiscaleSerializer(serializers.ModelSerializer):
 
 class OrdreDeRecettesSerializer(serializers.ModelSerializer):
     montantReclame = serializers.DecimalField(source="montant_reclame", max_digits=14, decimal_places=2)
-    penalites = serializers.DecimalField(source="penalites", max_digits=14, decimal_places=2)
+    penalites = serializers.DecimalField(max_digits=14, decimal_places=2)
     fraisAnnexes = serializers.DecimalField(source="frais_annexes", max_digits=14, decimal_places=2)
     montantTotal = serializers.SerializerMethodField()
     typeCollectivite = serializers.CharField(source="type_collectivite")
