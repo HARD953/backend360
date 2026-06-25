@@ -1,6 +1,7 @@
 from datetime import timedelta
 from pathlib import Path
 from decouple import config, Csv
+import dj_database_url
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -61,13 +62,45 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "config.wsgi.application"
 
+# DATABASES = {
+#     "default": {
+#         "ENGINE": "django.db.backends.sqlite3",
+#         "NAME": BASE_DIR / "db.sqlite3",
+#     }
+# }
+
+# DATABASES = {
+#     "default": {
+#         "ENGINE": "django.db.backends.postgresql",
+#         "NAME": config("DB_NAME", default="visitrack360_db"),
+#         "USER": config("DB_USER", default="visitrack360_user"),
+#         "PASSWORD": config("DB_PASSWORD"),
+#         "HOST": config("DB_HOST", default="185.98.137.221"),
+#         "PORT": config("DB_PORT", default="5432"),
+#     }
+# }
+
+# DATABASES = {
+#     "default": {
+#         "ENGINE": "django.db.backends.postgresql",
+#         "NAME": "visitrack360_db",
+#         "USER": "visitrack360_user",
+#         "PASSWORD": "issa01",
+#         "HOST": "185.98.137.221",
+#         "PORT": "5432",
+#     }
+# }
+
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": "visitrack360_db",
+        "USER": "visitrack360_db_user",
+        "PASSWORD": "KXkykV3e9ZXoDBuJQgIx1SxWQUeuFtAu",
+        "HOST": "dpg-d8ud3i3tqb8s73b4bg3g-a.oregon-postgres.render.com",
+        "PORT": "5432",
     }
 }
-
 AUTH_USER_MODEL = "accounts.CustomUser"
 
 AUTH_PASSWORD_VALIDATORS = [
