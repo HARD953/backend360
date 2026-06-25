@@ -253,15 +253,29 @@ class AgentRecenseurSerializer(serializers.Serializer):
     affectations = serializers.ListField(child=serializers.CharField())
 
 class SimulationFiscaleSerializer(serializers.ModelSerializer):
-    coutTSP = serializers.DecimalField(source="cout_tsp", max_digits=14, decimal_places=2)
-    coutODP = serializers.DecimalField(source="cout_odp", max_digits=14, decimal_places=2)
-    coutTotal = serializers.DecimalField(source="cout_total", max_digits=14, decimal_places=2)
-    riqueFiscal = serializers.CharField(source="risque_fiscal")
-    dureesMois = serializers.IntegerField(source="duree_mois")
-    tauxTSP = serializers.FloatField(source="taux_tsp")
-    odpApplicable = serializers.BooleanField(source="odp_applicable")
-    taxesCommunales = serializers.BooleanField(source="taxes_communales")
-    typeSupport = serializers.CharField(source="type_support")
+    """Serializer pour SimulationFiscale.
+    Les champs read_only (coutTSP, coutODP, coutTotal, riqueFiscal) sont
+    calculés automatiquement par le modèle via perform_create/perform_update.
+    """
+
+    # Champs calculés — fournis par le serveur, jamais par le client
+    coutTSP = serializers.DecimalField(
+        source="cout_tsp", max_digits=14, decimal_places=2, read_only=True
+    )
+    coutODP = serializers.DecimalField(
+        source="cout_odp", max_digits=14, decimal_places=2, read_only=True
+    )
+    coutTotal = serializers.DecimalField(
+        source="cout_total", max_digits=14, decimal_places=2, read_only=True
+    )
+    riqueFiscal = serializers.CharField(source="risque_fiscal", read_only=True)
+
+    # Champs écriture — envoyés par le front en camelCase
+    typeSupport = serializers.CharField(source="type_support", required=True)
+    dureesMois = serializers.IntegerField(source="duree_mois", required=True)
+    tauxTSP = serializers.FloatField(source="taux_tsp", required=True)
+    odpApplicable = serializers.BooleanField(source="odp_applicable", required=True)
+    taxesCommunales = serializers.BooleanField(source="taxes_communales", required=True)
     creeLe = serializers.DateTimeField(source="cree_le", read_only=True)
 
     class Meta:
@@ -274,7 +288,9 @@ class SimulationFiscaleSerializer(serializers.ModelSerializer):
             "coutTSP", "coutODP", "coutTotal", "riqueFiscal",
             "creeLe",
         ]
-        read_only_fields = ["id", "coutTSP", "coutODP", "coutTotal", "riqueFiscal", "creeLe"]
+        read_only_fields = [
+            "id", "coutTSP", "coutODP", "coutTotal", "riqueFiscal", "creeLe"
+        ]
 
 
 class OrdreDeRecettesSerializer(serializers.ModelSerializer):

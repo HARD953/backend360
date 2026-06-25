@@ -26,6 +26,7 @@ from .serializers import (
     AlertePrioritaireSerializer,
     ActivityLogSerializer,
     AgentRecenseurSerializer,
+    SimulationFiscaleSerializer,
 )
 from .permissions import (
     SupportsPermission,
@@ -602,14 +603,9 @@ class DashboardNegociationsView(APIView):
     
 
 from .models import SimulationFiscale
-from .serializers import SimulationFiscaleSerializer
 
 
 class SimulationFiscaleViewSet(EntrepriseScopedMixin, viewsets.ModelViewSet):
-    """CRUD simulations fiscales + action calculate.
-    POST /api/simulations/{id}/calculer/ → déclenche le calcul et sauvegarde.
-    """
-
     serializer_class = SimulationFiscaleSerializer
     permission_classes = [permissions.IsAuthenticated]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter]
