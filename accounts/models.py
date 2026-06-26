@@ -3,12 +3,14 @@ from django.db import models
 
 
 class Entreprise(models.Model):
-    """Entreprise cliente (ex: MTN-CI). Pivot du multi-tenant : toute donnée
-    métier (supports, négociations, dossiers fiscaux) est rattachée à une entreprise."""
-
     nom = models.CharField(max_length=100, unique=True)
     sigle = models.CharField(max_length=20, blank=True)
     secteur = models.CharField(max_length=100, blank=True)
+    logo = models.ImageField(          # ← AJOUT
+        upload_to="entreprises/logos/",
+        null=True,
+        blank=True,
+    )
     is_active = models.BooleanField(default=True)
     cree_le = models.DateTimeField(auto_now_add=True)
 

@@ -6,7 +6,7 @@ from .models import CustomUser, Entreprise, AffectationAgent
 class EntrepriseSerializer(serializers.ModelSerializer):
     class Meta:
         model = Entreprise
-        fields = ["id", "nom", "sigle", "secteur", "is_active", "cree_le"]
+        fields = ["id", "nom", "sigle", "secteur", "logo", "is_active", "cree_le"]
         read_only_fields = ["id", "cree_le"]
 
 
