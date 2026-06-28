@@ -1,6 +1,10 @@
-from django.shortcuts import render
+"""
+views.py — VisiTrack360
+ViewSets pour tous les modèles : auth, users, entreprises, hiérarchie géo, affectations.
+"""
 
-from rest_framework import generics, permissions, viewsets, filters
+from rest_framework import generics, permissions, viewsets, filters, status
+from rest_framework.response import Response
 from rest_framework_simplejwt.views import TokenObtainPairView
 from django_filters.rest_framework import DjangoFilterBackend
 
@@ -26,22 +30,13 @@ from .serializers import (
     QuartierSerializer,
     ZoneSerializer,
 )
-class CustomTokenObtainPairView(TokenObtainPairView):
-    """POST /api/auth/login/ — retourne access, refresh, et les infos user."""
-
-    serializer_class = CustomTokenObtainPairSerializer
 
 
-class MeView(generics.RetrieveUpdateAPIView):
-    """GET/PATCH /api/auth/me/ — profil de l'utilisateur connecté."""
+# ---------------------------------------------------------------------------
+# Permissions
+# ---------------------------------------------------------------------------
 
-    serializer_class = CustomUserSerializer
-    permission_classes = [permissions.IsAuthenticated]
 
-    def get_object(self):
-        return self.request.user
-
-    
 class IsSuperAdmin(permissions.BasePermission):
     def has_permission(self, request, view):
         return bool(
@@ -62,13 +57,45 @@ class IsSuperAdminOrReadOnly(permissions.BasePermission):
         return request.user.role == CustomUser.Role.SUPERADMIN
 
 
-class CustomUserViewSet(viewsets.ModelViewSet):
-    """CRUD utilisateurs — réservé aux SuperAdmin.
-    GET /api/users/ | POST /api/users/ | GET/PATCH/DELETE /api/users/{id}/
-    """
+# ---------------------------------------------------------------------------
+# Auth
+# ---------------------------------------------------------------------------
 
-    queryset = CustomUser.objects.select_related("entreprise").prefetch_related("affectations")
+
+class CustomTokenObtainPairView(TokenObtainPairView):
+    """POST /api/auth/login/ — retourne access, refresh, et les infos user."""
+    serializer_class = CustomTokenObtainPairSerializer
+
+
+class MeView(generics.RetrieveUpdateAPIView):
+    """GET/PATCH /api/auth/me/ — profil de l'utilisateur connecté."""
+    serializer_class = CustomUserSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_object(self):
+        return self.request.user
+
+
+# ---------------------------------------------------------------------------
+# Users & Entreprises
+# ---------------------------------------------------------------------------
+
+
+class CustomUserViewSet(viewsets.ModelViewSet):
+    """
+    CRUD utilisateurs — réservé aux SuperAdmin.
+    GET /api/users/ | POST /api/users/ | GET/PATCH/DELETE /api/users/{id}/
+    Filtres : ?role=AGENT&is_active=true&entreprise=1
+    Recherche : ?search=dupont
+    """
+    queryset = (
+        CustomUser.objects
+        .select_related("entreprise")
+        .prefetch_related("affectations")
+        .order_by("nom", "prenom")
+    )
     permission_classes = [IsSuperAdmin]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter]
     filterset_fields = ["role", "is_active", "entreprise"]
     search_fields = ["nom", "prenom", "email"]
 
@@ -77,33 +104,52 @@ class CustomUserViewSet(viewsets.ModelViewSet):
             return CustomUserCreateSerializer
         return CustomUserSerializer
 
+    def create(self, request, *args, **kwargs):
+        """
+        Crée l'utilisateur via CustomUserCreateSerializer (champ password),
+        puis retourne la représentation complète via CustomUserSerializer
+        (avec affectations, nomComplet, entrepriseNom…) pour que le front
+        n'ait jamais de champ undefined.
+        """
+        write_serializer = CustomUserCreateSerializer(
+            data=request.data,
+            context={"request": request},
+        )
+        write_serializer.is_valid(raise_exception=True)
+        user = write_serializer.save()
+
+        # Re-fetch avec les relations nécessaires au read serializer
+        user = (
+            CustomUser.objects
+            .select_related("entreprise")
+            .prefetch_related("affectations")
+            .get(pk=user.pk)
+        )
+        read_serializer = CustomUserSerializer(user, context={"request": request})
+        return Response(read_serializer.data, status=status.HTTP_201_CREATED)
+
 
 class EntrepriseViewSet(viewsets.ModelViewSet):
-    """CRUD entreprises — réservé aux SuperAdmin.
+    """
+    CRUD entreprises — réservé aux SuperAdmin.
     GET /api/entreprises/ | POST /api/entreprises/ | GET/PATCH/DELETE /api/entreprises/{id}/
     """
-
-    queryset = Entreprise.objects.all()
+    queryset = Entreprise.objects.all().order_by("nom")
     serializer_class = EntrepriseSerializer
     permission_classes = [IsSuperAdmin]
+    filter_backends = [filters.SearchFilter]
     search_fields = ["nom", "sigle"]
 
 
-class AffectationAgentViewSet(viewsets.ModelViewSet):
-    """CRUD des affectations de zones aux agents.
-    GET /api/affectations/?agent={id} | POST /api/affectations/
-    """
-
-    queryset = AffectationAgent.objects.select_related("agent").all()
-    serializer_class = AffectationAgentSerializer
-    permission_classes = [permissions.IsAuthenticated]
-    filterset_fields = ["agent", "type_zone", "est_active"]
+# ---------------------------------------------------------------------------
+# Hiérarchie géographique
+# ---------------------------------------------------------------------------
 
 
 class DistrictViewSet(viewsets.ModelViewSet):
     """
     CRUD districts.
-    GET /api/districts/ | POST /api/districts/ | GET/PATCH/DELETE /api/districts/{id}/
+    GET /api/geo/districts/ | POST | GET/PATCH/DELETE /api/geo/districts/{id}/
     Filtres : ?is_active=true
     Recherche : ?search=abidjan
     """
@@ -119,7 +165,6 @@ class RegionViewSet(viewsets.ModelViewSet):
     """
     CRUD régions.
     Filtres : ?district=1&is_active=true
-    Recherche : ?search=sud
     """
     queryset = Region.objects.select_related("district").all().order_by("district__nom", "nom")
     serializer_class = RegionSerializer
@@ -133,7 +178,6 @@ class CommuneViewSet(viewsets.ModelViewSet):
     """
     CRUD communes.
     Filtres : ?region=1&is_active=true
-    Recherche : ?search=cocody
     """
     queryset = (
         Commune.objects
