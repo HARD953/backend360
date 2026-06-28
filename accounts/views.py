@@ -31,6 +31,7 @@ from .serializers import (
     ZoneSerializer,
 )
 
+from rest_framework.permissions import IsAuthenticated
 
 # ---------------------------------------------------------------------------
 # Permissions
@@ -252,3 +253,63 @@ class AffectationAgentViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ["agent", "est_active"]
+
+from .models import SupportPublicitaire, Marque, Canal, Site, Etat, Visibilite
+from .serializers import (
+    SupportPublicitaireSerializer,
+    MarqueSerializer,
+    CanalSerializer,
+    SiteSerializer,
+    EtatSerializer,
+    VisibiliteSerializer,
+)
+ 
+ 
+class SupportPublicitaireViewSet(viewsets.ModelViewSet):
+    queryset = SupportPublicitaire.objects.all().order_by("-create")
+    serializer_class = SupportPublicitaireSerializer
+    permission_classes = [IsAuthenticated]
+    filter_backends = [filters.SearchFilter, DjangoFilterBackend]
+    search_fields = ["type_support", "entreprise"]
+    filterset_fields = ["entreprise"]
+ 
+ 
+class MarqueViewSet(viewsets.ModelViewSet):
+    queryset = Marque.objects.all().order_by("-create")
+    serializer_class = MarqueSerializer
+    permission_classes = [IsAuthenticated]
+    filter_backends = [filters.SearchFilter, DjangoFilterBackend]
+    search_fields = ["marque", "entreprise"]
+    filterset_fields = ["entreprise"]
+ 
+ 
+class CanalViewSet(viewsets.ModelViewSet):
+    queryset = Canal.objects.all().order_by("-create")
+    serializer_class = CanalSerializer
+    permission_classes = [IsAuthenticated]
+    filter_backends = [filters.SearchFilter]
+    search_fields = ["canal"]
+ 
+ 
+class SiteViewSet(viewsets.ModelViewSet):
+    queryset = Site.objects.all().order_by("-create")
+    serializer_class = SiteSerializer
+    permission_classes = [IsAuthenticated]
+    filter_backends = [filters.SearchFilter]
+    search_fields = ["site"]
+ 
+ 
+class EtatViewSet(viewsets.ModelViewSet):
+    queryset = Etat.objects.all().order_by("-create")
+    serializer_class = EtatSerializer
+    permission_classes = [IsAuthenticated]
+    filter_backends = [filters.SearchFilter]
+    search_fields = ["etat"]
+ 
+ 
+class VisibiliteViewSet(viewsets.ModelViewSet):
+    queryset = Visibilite.objects.all().order_by("-create")
+    serializer_class = VisibiliteSerializer
+    permission_classes = [IsAuthenticated]
+    filter_backends = [filters.SearchFilter]
+    search_fields = ["visibilite"]

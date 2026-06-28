@@ -20,10 +20,26 @@ from .views import (
     ZoneViewSet,
 )
 
+from .views import (
+    SupportPublicitaireViewSet, MarqueViewSet, CanalViewSet,
+    SiteViewSet, EtatViewSet, VisibiliteViewSet,
+)
+
+
+
+
 router = DefaultRouter()
 router.register(r"users",        CustomUserViewSet,       basename="users")
 router.register(r"entreprises",  EntrepriseViewSet,       basename="entreprises")
 router.register(r"affectations", AffectationAgentViewSet, basename="affectations")
+
+router.register(r"referentiels/supports",    SupportPublicitaireViewSet, basename="support-publicitaire")
+router.register(r"referentiels/marques",     MarqueViewSet,              basename="marque")
+router.register(r"referentiels/canaux",      CanalViewSet,               basename="canal")
+router.register(r"referentiels/sites",       SiteViewSet,                basename="site")
+router.register(r"referentiels/etats",       EtatViewSet,                basename="etat")
+router.register(r"referentiels/visibilites", VisibiliteViewSet,          basename="visibilite")
+
 
 # Hiérarchie géographique
 router.register(r"geo/districts", DistrictViewSet, basename="districts")
@@ -96,3 +112,9 @@ urlpatterns = [
 # GET    /api/geo/zones/{id}/
 # PATCH  /api/geo/zones/{id}/
 # DELETE /api/geo/zones/{id}/
+
+
+# Cela expose automatiquement :
+#   GET/POST  /api/referentiels/supports/
+#   GET/PATCH/DELETE /api/referentiels/supports/{id}/
+#   (idem pour marques, canaux, sites, etats, visibilites)
