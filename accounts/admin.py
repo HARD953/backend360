@@ -40,6 +40,8 @@ class CustomUserAdmin(UserAdmin):
 
 @admin.register(AffectationAgent)
 class AffectationAgentAdmin(admin.ModelAdmin):
-    list_display = ["agent", "type_zone", "valeur_zone", "est_active"]
-    list_filter = ["type_zone", "est_active"]
-    search_fields = ["agent__nom", "agent__prenom", "valeur_zone"]
+    list_display = ['agent', 'type_zone', 'valeur_zone', 'est_active', 'cree_le']
+    search_fields = ['agent__nom', 'agent__prenom', 'agent__email']
+    
+    def get_list_filter(self, request):
+        return ['est_active']  # Retirer 'type_zone' du list_filter
