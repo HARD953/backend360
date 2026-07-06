@@ -124,14 +124,14 @@ class SupportMapPointSerializer(serializers.ModelSerializer):
 # Négociations
 # ---------------------------------------------------------------------------
 
+
 class ArgumentairePretSerializer(serializers.ModelSerializer):
-    iconKey = serializers.CharField(source="motif", read_only=True)
+    iconKey = serializers.CharField(source="motif")
     label = serializers.CharField(source="get_motif_display", read_only=True)
-    motif = serializers.ChoiceField(choices=ArgumentairePret.Motif.choices, write_only=True)
 
     class Meta:
         model = ArgumentairePret
-        fields = ["id", "iconKey", "label", "motif", "negociation"]
+        fields = ["id", "iconKey", "label", "negociation"]
 
 
 class NegociationSerializer(serializers.ModelSerializer):
