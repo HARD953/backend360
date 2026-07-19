@@ -796,3 +796,62 @@ class OrdreDeRecettesViewSet(EntrepriseScopedMixin, viewsets.ModelViewSet):
             "penalitesTotal": float(stats["penalites_total"] or 0),
             "parStatut": list(par_statut),
         })
+    
+
+from rest_framework import viewsets, status
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from django.db.models import Q
+
+from .models import DonneeCollectee
+from .serializers import SupportPublicitaireSerializer, PDVSummarySerializer
+
+
+class SupportPublicitaireViewSet(viewsets.ModelViewSet):
+    serializer_class = SupportPublicitaireSerializer
+
+    def get_queryset(self):
+        qs = DonneeCollectee.objects.filter(is_deleted=False)
+        entreprise = getattr(self.request.user, "entreprise", None)
+        if entreprise:
+            qs = qs.filter(entreprise_rel=entreprise)
+        return qs
+
+    def perform_create(self, serializer):
+        serializer.save(
+            agent=self.request.user,
+            entreprise_rel=getattr(self.request.user, "entreprise", None),
+        )
+
+    def perform_destroy(self, instance):
+        # Soft delete pour rester cohérent avec is_deleted
+        instance.is_deleted = True
+        instance.save(update_fields=["is_deleted"])
+
+    @action(detail=False, methods=["get"], url_path="pdv-search")
+    def pdv_search(self, request):
+        """Autocomplete PDV pour le mobile : cas 'revisite'.
+        ?q=texte -> cherche dans nomsite / commune / quartier.
+        Renvoie 1 ligne représentative par pdv_reference (la plus récente).
+        """
+        q = request.query_params.get("q", "").strip()
+        qs = self.get_queryset()
+        if q:
+            qs = qs.filter(
+                Q(nomsite__icontains=q) | Q(commune__icontains=q) | Q(quartier__icontains=q)
+            )
+
+        qs = qs.order_by("pdv_reference", "-date_collecte")
+
+        seen = set()
+        representatives = []
+        for row in qs.iterator():
+            if row.pdv_reference in seen:
+                continue
+            seen.add(row.pdv_reference)
+            representatives.append(row)
+            if len(representatives) >= 20:  # limite raisonnable pour le mobile
+                break
+
+        serializer = PDVSummarySerializer(representatives, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)

@@ -1,10 +1,15 @@
-from django.conf import settings
+import secrets
+from django.utils.text import slugify
 from django.db import models
+from django.conf import settings
 
 
 class DonneeCollectee(models.Model):
-    """Support publicitaire recensé sur le terrain. Modèle fourni par le client,
-    conservé tel quel pour rester compatible avec l'app mobile de collecte existante."""
+    """Support publicitaire recensé sur le terrain.
+    Un même PDV (point de vente) peut accueillir plusieurs supports :
+    ils partagent alors le même `pdv_reference`, mais chaque ligne
+    reste indépendante (pas de synchro automatique entre supports liés).
+    """
 
     class EtatSupport(models.TextChoices):
         BON = "Bon", "Bon"
@@ -22,6 +27,18 @@ class DonneeCollectee(models.Model):
         "Le champ 'entreprise' texte ci-dessous reste conservé pour compatibilité avec l'app mobile.",
     )
     entreprise = models.CharField(max_length=50, blank=True)
+
+    # --- Regroupement PDV ---
+    pdv_reference = models.SlugField(
+        max_length=80,
+        db_index=True,
+        blank=True,
+        help_text="Identifiant du PDV, partagé par tous les supports d'un même point de vente. "
+        "Auto-généré à la création si absent (nouveau PDV), ou fourni par le client mobile "
+        "quand l'agent rattache un support à un PDV existant (revisite).",
+    )
+
+    # --- Infos PDV (dupliquées par support, volontairement non synchronisées) ---
     Marque = models.CharField(max_length=50, blank=True)
     ville = models.CharField(max_length=50, blank=True, default="Abidjan")
     commune = models.CharField(max_length=50, blank=True, default="Abidjan")
@@ -30,6 +47,13 @@ class DonneeCollectee(models.Model):
     village = models.CharField(max_length=50, blank=True, default="Abidjan")
     quartier = models.CharField(max_length=50, blank=True)
     nomsite = models.CharField(max_length=50, blank=True, default="RAS")
+    latitude = models.FloatField(blank=True, null=True)
+    longitude = models.FloatField(blank=True, null=True)
+    Rnom = models.CharField(max_length=50, blank=True)
+    Rprenom = models.CharField(max_length=50, blank=True)
+    Rcontact = models.CharField(max_length=50, blank=True)
+
+    # --- Infos support (spécifiques à chaque ligne) ---
     type_support = models.CharField(max_length=50, blank=True)
     surface = models.FloatField(blank=True, null=True)
     nombre_support = models.FloatField(blank=True, null=True)
@@ -46,9 +70,6 @@ class DonneeCollectee(models.Model):
     image_support_s = models.ImageField(upload_to="collecte_images/", null=True, blank=True)
     signature = models.ImageField(upload_to="collecte_images/", null=True, blank=True)
     signature1 = models.ImageField(upload_to="collecte_images/", null=True, blank=True)
-    Rnom = models.CharField(max_length=50, blank=True)
-    Rprenom = models.CharField(max_length=50, blank=True)
-    Rcontact = models.CharField(max_length=50, blank=True)
     Snom = models.CharField(max_length=50, blank=True)
     Sprenom = models.CharField(max_length=50, blank=True)
     Scontact = models.CharField(max_length=50, blank=True)
@@ -68,17 +89,28 @@ class DonneeCollectee(models.Model):
     ODP_value = models.FloatField(blank=True, null=True)
     create = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    latitude = models.FloatField(blank=True, null=True)
-    longitude = models.FloatField(blank=True, null=True)
     is_deleted = models.BooleanField(default=False)
 
     class Meta:
         verbose_name = "Support publicitaire"
         verbose_name_plural = "Supports publicitaires"
         ordering = ["-date_collecte"]
+        indexes = [models.Index(fields=["pdv_reference"])]
 
     def __str__(self):
         return f"{self.Marque} — {self.nomsite} ({self.commune})"
+
+    def _generate_pdv_reference(self) -> str:
+        base = slugify(f"{self.commune}-{self.quartier}-{self.nomsite}")[:60] or "pdv"
+        suffix = secrets.token_hex(3)  # 6 caractères, évite les collisions
+        return f"{base}-{suffix}"
+
+    def save(self, *args, **kwargs):
+        # Nouveau PDV : pas de pdv_reference fourni par le client mobile -> on le génère.
+        # Revisite : le client envoie le pdv_reference existant -> on le respecte tel quel.
+        if not self.pdv_reference:
+            self.pdv_reference = self._generate_pdv_reference()
+        super().save(*args, **kwargs)
 
 
 class Negociation(models.Model):

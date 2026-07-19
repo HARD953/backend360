@@ -6,104 +6,126 @@ from .models import *
 # Supports publicitaires (DonneeCollectee)
 # ---------------------------------------------------------------------------
 
-class SupportPublicitaireSerializer(serializers.ModelSerializer):
-    """Sérialise DonneeCollectee avec des noms de champs alignés sur le front
-    (camelCase, cohérent avec SupportPublicitaire dans types/dashboard.ts)."""
+# class SupportPublicitaireSerializer(serializers.ModelSerializer):
+#     """Sérialise DonneeCollectee avec des noms de champs alignés sur le front
+#     (camelCase, cohérent avec SupportPublicitaire dans types/dashboard.ts)."""
 
-    marque = serializers.CharField(source="Marque")
-    nomSite = serializers.CharField(source="nomsite")
-    typeSupport = serializers.CharField(source="type_support")
-    nombreFace = serializers.FloatField(source="nombre_face")
-    nombreSupport = serializers.FloatField(source="nombre_support")
-    surfaceODP = serializers.FloatField()
-    etatSupport = serializers.CharField(source="etat_support")
-    typeSite = serializers.CharField(source="typesite")
-    agentNom = serializers.SerializerMethodField()
-    responsableNom = serializers.CharField(source="Rnom")
-    responsablePrenom = serializers.CharField(source="Rprenom")
-    responsableContact = serializers.CharField(source="Rcontact")
-    signataireNom = serializers.CharField(source="Snom")
-    signatairePrenom = serializers.CharField(source="Sprenom")
-    signataireContact = serializers.CharField(source="Scontact")
-    tsp = serializers.FloatField(source="TSP")
-    odp = serializers.BooleanField(source="ODP")
-    odpValue = serializers.FloatField(source="ODP_value")
-    ap = serializers.BooleanField(source="AP")
-    apa = serializers.BooleanField(source="APA")
-    apt = serializers.BooleanField(source="APT")
-    ae = serializers.BooleanField(source="AE")
-    aea = serializers.BooleanField(source="AEA")
-    aet = serializers.BooleanField(source="AET")
-    tauxCommune = serializers.BooleanField()
-    tauxRegion = serializers.BooleanField()
-    tauxDistrict = serializers.BooleanField()
-    dateCollecte = serializers.DateTimeField(source="date_collecte", read_only=True)
-    updatedAt = serializers.DateTimeField(source="updated_at", read_only=True)
-    isDeleted = serializers.BooleanField(source="is_deleted")
-    imageSupport = serializers.ImageField(source="image_support", required=False, allow_null=True)
-    imageSupportSecondaire = serializers.ImageField(
-        source="image_support_s", required=False, allow_null=True
-    )
+#     marque = serializers.CharField(source="Marque")
+#     nomSite = serializers.CharField(source="nomsite")
+#     typeSupport = serializers.CharField(source="type_support")
+#     nombreFace = serializers.FloatField(source="nombre_face")
+#     nombreSupport = serializers.FloatField(source="nombre_support")
+#     surfaceODP = serializers.FloatField()
+#     etatSupport = serializers.CharField(source="etat_support")
+#     typeSite = serializers.CharField(source="typesite")
+#     agentNom = serializers.SerializerMethodField()
+#     responsableNom = serializers.CharField(source="Rnom")
+#     responsablePrenom = serializers.CharField(source="Rprenom")
+#     responsableContact = serializers.CharField(source="Rcontact")
+#     signataireNom = serializers.CharField(source="Snom")
+#     signatairePrenom = serializers.CharField(source="Sprenom")
+#     signataireContact = serializers.CharField(source="Scontact")
+#     tsp = serializers.FloatField(source="TSP")
+#     odp = serializers.BooleanField(source="ODP")
+#     odpValue = serializers.FloatField(source="ODP_value")
+#     ap = serializers.BooleanField(source="AP")
+#     apa = serializers.BooleanField(source="APA")
+#     apt = serializers.BooleanField(source="APT")
+#     ae = serializers.BooleanField(source="AE")
+#     aea = serializers.BooleanField(source="AEA")
+#     aet = serializers.BooleanField(source="AET")
+#     tauxCommune = serializers.BooleanField()
+#     tauxRegion = serializers.BooleanField()
+#     tauxDistrict = serializers.BooleanField()
+#     dateCollecte = serializers.DateTimeField(source="date_collecte", read_only=True)
+#     updatedAt = serializers.DateTimeField(source="updated_at", read_only=True)
+#     isDeleted = serializers.BooleanField(source="is_deleted")
+#     imageSupport = serializers.ImageField(source="image_support", required=False, allow_null=True)
+#     imageSupportSecondaire = serializers.ImageField(
+#         source="image_support_s", required=False, allow_null=True
+#     )
+
+#     class Meta:
+#         model = DonneeCollectee
+#         fields = [
+#             "id",
+#             "marque",
+#             "entreprise",
+#             "entreprise_rel",
+#             "agent",
+#             "agentNom",
+#             "ville",
+#             "commune",
+#             "region",
+#             "district",
+#             "village",
+#             "quartier",
+#             "nomSite",
+#             "latitude",
+#             "longitude",
+#             "typeSupport",
+#             "surface",
+#             "nombreSupport",
+#             "nombreFace",
+#             "surfaceODP",
+#             "canal",
+#             "etatSupport",
+#             "typeSite",
+#             "visibilite",
+#             "description",
+#             "observation",
+#             "responsableNom",
+#             "responsablePrenom",
+#             "responsableContact",
+#             "signataireNom",
+#             "signatairePrenom",
+#             "signataireContact",
+#             "duree",
+#             "anciennete",
+#             "tsp",
+#             "odp",
+#             "odpValue",
+#             "ap",
+#             "apa",
+#             "apt",
+#             "ae",
+#             "aea",
+#             "aet",
+#             "tauxCommune",
+#             "tauxRegion",
+#             "tauxDistrict",
+#             "imageSupport",
+#             "imageSupportSecondaire",
+#             "dateCollecte",
+#             "updatedAt",
+#             "isDeleted",
+#         ]
+#         read_only_fields = ["id", "entreprise_rel"]
+
+#     def get_agentNom(self, obj):
+#         return obj.agent.nom_complet if obj.agent else None
+    
+
+class SupportPublicitaireSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DonneeCollectee
+        fields = "__all__"
+        read_only_fields = ["agent", "entreprise_rel", "date_collecte", "create", "updated_at"]
+        # pdv_reference reste modifiable en écriture : le mobile l'envoie explicitement
+        # quand on rattache un support à un PDV déjà existant (cf. flow "revisite").
+
+
+class PDVSummarySerializer(serializers.ModelSerializer):
+    """Utilisé uniquement par l'endpoint de recherche PDV (autocomplete),
+    pour préremplir les champs PDV côté mobile sans exposer les champs support."""
 
     class Meta:
         model = DonneeCollectee
         fields = [
-            "id",
-            "marque",
-            "entreprise",
-            "entreprise_rel",
-            "agent",
-            "agentNom",
-            "ville",
-            "commune",
-            "region",
-            "district",
-            "village",
-            "quartier",
-            "nomSite",
-            "latitude",
-            "longitude",
-            "typeSupport",
-            "surface",
-            "nombreSupport",
-            "nombreFace",
-            "surfaceODP",
-            "canal",
-            "etatSupport",
-            "typeSite",
-            "visibilite",
-            "description",
-            "observation",
-            "responsableNom",
-            "responsablePrenom",
-            "responsableContact",
-            "signataireNom",
-            "signatairePrenom",
-            "signataireContact",
-            "duree",
-            "anciennete",
-            "tsp",
-            "odp",
-            "odpValue",
-            "ap",
-            "apa",
-            "apt",
-            "ae",
-            "aea",
-            "aet",
-            "tauxCommune",
-            "tauxRegion",
-            "tauxDistrict",
-            "imageSupport",
-            "imageSupportSecondaire",
-            "dateCollecte",
-            "updatedAt",
-            "isDeleted",
+            "pdv_reference", "Marque", "ville", "commune", "region",
+            "district", "village", "quartier", "nomsite",
+            "latitude", "longitude", "Rnom", "Rprenom", "Rcontact",
         ]
-        read_only_fields = ["id", "entreprise_rel"]
-
-    def get_agentNom(self, obj):
-        return obj.agent.nom_complet if obj.agent else None
 
 
 class SupportMapPointSerializer(serializers.ModelSerializer):
@@ -335,3 +357,7 @@ class OrdreDeRecettesSerializer(serializers.ModelSerializer):
 
     def get_responsableNom(self, obj):
         return obj.responsable.nom_complet if obj.responsable else None
+    
+
+
+
